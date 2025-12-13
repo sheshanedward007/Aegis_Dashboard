@@ -19,6 +19,7 @@ if (!firebase.apps.length) {
 
 // Firebase Firestore reference
 const db = firebase.firestore();
+const storage = firebase.storage();
 const reportsRef = db.collection("reports"); // Make sure this matches your Firestore collection
 
 // Real-time listener
@@ -37,7 +38,8 @@ reportsRef.onSnapshot((snapshot) => {
                 lng: data.location.longitude || data.location.lng
             } : null,
             timestamp: data.timestamp || null,
-            notes: data.notes || ""
+            notes: data.notes || "",
+            image: data.image || null // Assuming field name is 'image' (path in storage)
         });
     });
     filterIncidents(); // Re-render table and map
@@ -332,6 +334,38 @@ function openModal(incident) {
         }
     } else if (mapFrame) {
         mapFrame.src = "about:blank";
+    }
+
+    // Incident Image Logic
+    const imageContainer = document.getElementById('modal-image-container');
+    const incidentImage = document.getElementById('modal-incident-image');
+    const noImageText = document.getElementById('modal-no-image');
+
+    if (incident.image) {
+        // Reset state
+        imageContainer.style.display = 'none';
+        noImageText.style.display = 'none'; // tailored for loading state if needed, but keeping simple
+
+        // Create a reference to the file we want to download
+        const storageRef = storage.ref(incident.image);
+
+        // Get the download URL
+        storageRef.getDownloadURL()
+            .then((url) => {
+                incidentImage.src = url;
+                imageContainer.style.display = 'block';
+                noImageText.style.display = 'none';
+            })
+            .catch((error) => {
+                console.error("Error fetching image URL:", error);
+                imageContainer.style.display = 'none';
+                noImageText.style.display = 'block';
+                noImageText.textContent = "Error loading image";
+            });
+    } else {
+        imageContainer.style.display = 'none';
+        noImageText.style.display = 'block';
+        noImageText.textContent = "No image available";
     }
 }
 
