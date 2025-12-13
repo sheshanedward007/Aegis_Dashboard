@@ -1,6 +1,7 @@
 // dashboard.js
 
 let incidents = [];
+let currentIncidentId = null;
 
 // Firebase Configuration
 const firebaseConfig = {
@@ -123,6 +124,18 @@ const navTabs = document.querySelectorAll('.nav-tab');
 
 let currentStatusFilter = 'ALL';
 
+navTabs.forEach(tab => {
+    tab.addEventListener('click', () => {
+        navTabs.forEach(t => t.classList.remove('active'));
+        tab.classList.add('active');
+        currentStatusFilter = tab.getAttribute('data-tab');
+        filterIncidents();
+    });
+});
+
+searchInput.addEventListener('input', filterIncidents);
+severityFilter.addEventListener('change', filterIncidents);
+
 function filterIncidents() {
     const term = searchInput.value.toLowerCase();
     const sev = severityFilter.value;
@@ -236,8 +249,61 @@ function openModal(incident) {
         noImg.style.display = 'block';
     }
 
+    // Set current incident ID
+    currentIncidentId = incident.id;
+
+    // Update buttons state
+    updateStatusButtons(incident.status);
+
     modal.classList.remove('hidden');
 }
+
+function updateStatusButtons(status) {
+    const btns = document.querySelectorAll('.status-btn');
+    btns.forEach(btn => {
+        btn.classList.remove('active-to-be-reviewed', 'active-acknowledged');
+
+        // Normalize for comparison
+        const btnStatus = btn.getAttribute('data-status');
+        const currentStatus = status || 'To Be Reviewed';
+
+        if (btnStatus.toUpperCase() === currentStatus.toUpperCase()) {
+            if (currentStatus.toUpperCase() === 'ACKNOWLEDGED') {
+                btn.classList.add('active-acknowledged');
+            } else {
+                btn.classList.add('active-to-be-reviewed');
+            }
+        }
+    });
+}
+
+function updateIncidentStatus(newStatus) {
+    if (!currentIncidentId) return;
+
+    db.collection("reports").doc(currentIncidentId).update({
+        status: newStatus
+    }).then(() => {
+        console.log("Status updated to " + newStatus);
+
+        // Update local UI immediately (Modal Badge)
+        const modalStatusBadge = document.getElementById('modal-status-badge');
+        modalStatusBadge.textContent = newStatus;
+        modalStatusBadge.className = `badge ${getStatusClass(newStatus)}`;
+
+        // Update buttons
+        updateStatusButtons(newStatus);
+    }).catch((error) => {
+        console.error("Error updating status: ", error);
+    });
+}
+
+// Add listeners to status buttons
+document.querySelectorAll('.status-btn').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+        const status = e.target.getAttribute('data-status');
+        updateIncidentStatus(status);
+    });
+});
 
 function closeModal() {
     modal.classList.add('hidden');
