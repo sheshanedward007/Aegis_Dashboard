@@ -1,8 +1,8 @@
 const incidents = [
     {
         id: 1,
-        criticality: 'CRITICAL',
-        status: 'RESOLVED',
+        criticality: 5,
+        status: 'ACKNOWLEDGED',
         type: 'Fire',
         reporter: 'Sarah Mitchell',
         reporterPhone: '+1 (555) 123-4567',
@@ -12,13 +12,12 @@ const incidents = [
         time: 'Saturday, December 13, 2025 at 08:30:00 AM',
         shortDesc: 'Building fire on 3rd floor, multiple people evacuated',
         fullDesc: 'Building fire on 3rd floor, multiple people evacuated. Fire department notified. 15 people evacuated safely. No injuries reported so far.',
-        supplies: ['Fire extinguishers', 'First aid kits', 'Water'],
-        agent: 'Not assigned'
+        supplies: ['Fire extinguishers', 'First aid kits', 'Water']
     },
     {
         id: 2,
-        criticality: 'HIGH',
-        status: 'DISPATCHED',
+        criticality: 4,
+        status: 'TO BE REVIEWED',
         type: 'Medical Emergency',
         reporter: 'James Rodriguez',
         reporterPhone: '+1 (555) 234-5678',
@@ -28,13 +27,12 @@ const incidents = [
         time: 'Saturday, December 13, 2025 at 09:15:00 AM',
         shortDesc: 'Elderly male experiencing chest pains',
         fullDesc: '75-year-old male with history of heart condition experiencing severe chest pains and shortness of breath.',
-        supplies: ['Ambulance', 'Defibrillator', 'Oxygen'],
-        agent: 'Paramedic Sarah Johnson'
+        supplies: ['Ambulance', 'Defibrillator', 'Oxygen']
     },
     {
         id: 3,
-        criticality: 'MEDIUM',
-        status: 'NOT DISPATCHED',
+        criticality: 3,
+        status: 'TO BE REVIEWED',
         type: 'Gas Leak',
         reporter: 'Emily Chen',
         reporterPhone: '+1 (555) 345-6789',
@@ -44,13 +42,12 @@ const incidents = [
         time: 'Saturday, December 13, 2025 at 07:45:00 AM',
         shortDesc: 'Strong smell of gas near residential area',
         fullDesc: 'Residents reporting strong smell of gas. No visible leak source. Area cordoned off by neighbors.',
-        supplies: ['Hazmat Team', 'Gas Detectors'],
-        agent: 'Not assigned'
+        supplies: ['Hazmat Team', 'Gas Detectors']
     },
     {
         id: 4,
-        criticality: 'LOW',
-        status: 'RESOLVED',
+        criticality: 1,
+        status: 'ACKNOWLEDGED',
         type: 'Power Outage',
         reporter: 'Michael Thompson',
         reporterPhone: '+1 (555) 456-7890',
@@ -60,13 +57,12 @@ const incidents = [
         time: 'Saturday, December 13, 2025 at 06:20:00 AM',
         shortDesc: 'Street lights out on Pine Road',
         fullDesc: 'Entire block losing power. Street lights and traffic signals affected.',
-        supplies: ['Maintenance Crew', 'Traffic Cones'],
-        agent: 'Not assigned'
+        supplies: ['Maintenance Crew', 'Traffic Cones']
     },
     {
         id: 5,
-        criticality: 'HIGH',
-        status: 'NOT DISPATCHED',
+        criticality: 5,
+        status: 'TO BE REVIEWED',
         type: 'Hazardous Material Spill',
         reporter: 'Lisa Park',
         reporterPhone: '+1 (555) 567-8901',
@@ -76,13 +72,12 @@ const incidents = [
         time: 'Saturday, December 13, 2025 at 10:00:00 AM',
         shortDesc: 'Chemical truck overturned',
         fullDesc: 'Commercial truck carrying unknown chemicals overturned. Liquid leaking onto street. Driver conscious but trapped.',
-        supplies: ['Hazmat Team', 'Fire Engine', 'Police Barrier'],
-        agent: 'Not assigned'
+        supplies: ['Hazmat Team', 'Fire Engine', 'Police Barrier']
     },
     {
         id: 6,
-        criticality: 'MEDIUM',
-        status: 'DISPATCHED',
+        criticality: 2,
+        status: 'TO BE REVIEWED',
         type: 'Flooding',
         reporter: 'David Kumar',
         reporterPhone: '+1 (555) 678-9012',
@@ -92,29 +87,46 @@ const incidents = [
         time: 'Saturday, December 13, 2025 at 05:30:00 AM',
         shortDesc: 'Water main break flooding intersection',
         fullDesc: 'Major water main break. Water rising rapidly. Threatening nearby basement apartments.',
-        supplies: ['Water Pumps', 'Sandbags', 'Utility Crew'],
-        agent: 'Officer Mike Davis'
-    }
+        supplies: ['Water Pumps', 'Sandbags', 'Utility Crew']
+    },
+    { id: 7, criticality: 5, status: 'ACKNOWLEDGED', type: 'Test Incident 7', reporter: 'Test User', reporterPhone: '000', reporterEmail: 'test', location: 'Loc', gps: '0,0', time: 'Now', shortDesc: 'Test', fullDesc: 'Test', supplies: [] },
+    // Fill rest with mock data
+    ...Array.from({ length: 15 }, (_, i) => ({
+        id: 8 + i,
+        criticality: Math.floor(Math.random() * 5) + 1, // Random 1-5
+        status: 'ACKNOWLEDGED',
+        type: `Mock Incident ${8 + i}`,
+        reporter: 'Auto User',
+        reporterPhone: '',
+        reporterEmail: '',
+        location: 'Generated Location',
+        gps: '37.7, -122.4',
+        time: 'Today',
+        shortDesc: 'Generated description',
+        fullDesc: 'Generated full description',
+        supplies: []
+    }))
 ];
 
 // Helper to get severity badge class
-function getSeverityClass(severity) {
-    switch (severity.toUpperCase()) {
-        case 'CRITICAL': return 'badge-critical';
-        case 'HIGH': return 'badge-high';
-        case 'MEDIUM': return 'badge-medium';
-        case 'LOW': return 'badge-low';
-        default: return 'badge-low';
-    }
+function getSeverityClass(level) {
+    if (level >= 4) return 'badge-critical'; // 4, 5 -> Red
+    if (level === 3) return 'badge-mid';     // 3 -> Yellow
+    return 'badge-low';                      // 1, 2 -> Green
+}
+
+function getSeverityLabel(level) {
+    if (level >= 4) return 'Critical';
+    if (level === 3) return 'Mid';
+    return 'Low';
 }
 
 // Helper to get status badge class
 function getStatusClass(status) {
     switch (status.toUpperCase()) {
-        case 'RESOLVED': return 'status-resolved';
-        case 'DISPATCHED': return 'status-dispatched';
-        case 'NOT DISPATCHED': return 'status-not-dispatched';
-        default: return 'status-not-dispatched';
+        case 'ACKNOWLEDGED': return 'status-acknowledged';
+        case 'TO BE REVIEWED': return 'status-to-be-reviewed';
+        default: return 'status-to-be-reviewed';
     }
 }
 
@@ -124,7 +136,7 @@ function renderTable(data = incidents) {
     tbody.innerHTML = '';
 
     if (data.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;">No incidents found matching your filters.</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;">No incidents found matching your filters.</td></tr>';
         return;
     }
 
@@ -132,24 +144,14 @@ function renderTable(data = incidents) {
         const tr = document.createElement('tr');
         tr.onclick = () => openModal(incident);
 
-        let agentDisplay = incident.agent;
-        if (incident.status === 'DISPATCHED') {
-            agentDisplay = `<div>${incident.agent}</div><span class="badge" style="background:#dbeafe; color:#1e40af; font-size:10px;">ON THE WAY</span>`;
-        } else if (incident.status === 'RESOLVED') {
-            // For resolved, maybe just show name or "Resolved"
-            agentDisplay = `<div>${incident.agent === 'Not assigned' ? 'Resolved' : incident.agent}</div>`;
-        } else {
-            agentDisplay = `<span style="color:#9ca3af">Not assigned</span>`;
-        }
-
         tr.innerHTML = `
-            <td>${incident.id}</td>
-            <td><span class="badge ${getSeverityClass(incident.criticality)}">${incident.criticality}</span></td>
+
+            <td>#${incident.id}</td>
+            <td><span class="badge ${getSeverityClass(incident.criticality)}">Level ${incident.criticality} (${getSeverityLabel(incident.criticality)})</span></td>
             <td><span class="badge ${getStatusClass(incident.status)}">${incident.status}</span></td>
             <td>${incident.type}</td>
             <td>${incident.reporter}</td>
             <td>${incident.location.substring(0, 30)}...</td>
-            <td>${agentDisplay}</td>
         `;
         tbody.appendChild(tr);
     });
@@ -161,41 +163,170 @@ const searchBtn = document.getElementById('search-btn');
 const severityFilter = document.getElementById('severity-filter');
 const navTabs = document.querySelectorAll('.nav-tab');
 
-let currentStatusFilter = 'CURRENT';
+let currentStatusFilter = 'ALL';
 
 function filterIncidents() {
     const searchTerm = searchInput.value.toLowerCase();
     const severityValue = severityFilter.value;
 
-    const filtered = incidents.filter(incident => {
+    let filtered = incidents.filter(incident => {
         const matchesSearch =
             incident.type.toLowerCase().includes(searchTerm) ||
             incident.location.toLowerCase().includes(searchTerm) ||
-            incident.reporter.toLowerCase().includes(searchTerm) ||
-            incident.agent.toLowerCase().includes(searchTerm);
+            incident.reporter.toLowerCase().includes(searchTerm);
 
-        const matchesSeverity = severityValue === '' || incident.criticality === severityValue;
+        const matchesSeverity = severityValue === '' || incident.criticality === parseInt(severityValue);
 
         let matchesStatus = true;
-        if (currentStatusFilter === 'CURRENT') {
-            // Show everything except RESOLVED
-            matchesStatus = incident.status !== 'RESOLVED';
-        } else if (currentStatusFilter !== '') {
+        if (currentStatusFilter !== 'ALL') {
             matchesStatus = incident.status === currentStatusFilter;
         }
 
         return matchesSearch && matchesSeverity && matchesStatus;
     });
 
-    // Sort: Dispatched items go down (appear last)
+    // Custom Sorting Logic
+    // 1. "TO BE REVIEWED" comes before "ACKNOWLEDGED"
+    // 2. Sort by Criticality: 5 (desc) to 1
+
     filtered.sort((a, b) => {
-        if (a.status === 'DISPATCHED' && b.status !== 'DISPATCHED') return 1;
-        if (a.status !== 'DISPATCHED' && b.status === 'DISPATCHED') return -1;
-        return 0;
+        // Priority 1: Status (To Be Reviewed first)
+        if (a.status !== b.status) {
+            if (a.status === 'TO BE REVIEWED') return -1;
+            return 1;
+        }
+
+        // Priority 2: Criticality (High to Low)
+        return b.criticality - a.criticality;
     });
 
+    // Limit to 20 items if filtering ALL to reduce data clutter.
+    // Logic: Since the list is sorted with 'TO BE REVIEWED' at the top, limiting to 20 
+    // effectively "moves" excess 'ACKNOWLEDGED' items (at the bottom) to the 'ACKNOWLEDGED' tab only.
+    if (currentStatusFilter === 'ALL' && filtered.length > 20) {
+        filtered = filtered.slice(0, 20);
+    }
+
     renderTable(filtered);
+    renderMapMarkers(filtered);
 }
+
+// Map Initialization
+let map;
+let markers = [];
+
+function initMap() {
+    if (typeof L === 'undefined') {
+        console.warn('Leaflet not loaded. Map will not be available.');
+        return;
+    }
+    // Default to San Francisco
+    map = L.map('incident-map').setView([37.7749, -122.4194], 12);
+
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+    }).addTo(map);
+}
+
+function parseGps(gpsString) {
+    // Expected format: "37.7749° N, 122.4194° W" or "37.7749, -122.4194"
+    try {
+        if (!gpsString) return null;
+
+        // Remove ° N W E S and spaces
+        const cleanStr = gpsString.replace(/[°NSEW]/g, '');
+        const parts = cleanStr.split(',');
+
+        if (parts.length !== 2) return null;
+
+        let lat = parseFloat(parts[0]);
+        let lng = parseFloat(parts[1]);
+
+        // Handle Direction if simple parsing didn't account for negatives based on W/S
+        if (gpsString.includes('S')) lat = -Math.abs(lat);
+        if (gpsString.includes('W')) lng = -Math.abs(lng);
+
+        if (isNaN(lat) || isNaN(lng)) return null;
+
+        return [lat, lng];
+    } catch (e) {
+        console.error("GPS Parse Error", e);
+        return null;
+    }
+}
+
+function renderMapMarkers(data) {
+    if (!map) return;
+
+    // Clear existing markers
+    markers.forEach(marker => map.removeLayer(marker));
+    markers = [];
+
+    const bounds = L.latLngBounds();
+
+    data.forEach(incident => {
+        const coords = parseGps(incident.gps);
+        if (coords) {
+            // Determine marker color based on criticality (simple circle marker)
+            let color = '#3b82f6'; // Low (Blue -> Green in CSS, but here hardcoded color)
+            // Let's match CSS colors closer
+            // 1-2: Green, 3: Yellow, 4-5: Red
+            if (incident.criticality >= 4) color = '#ef4444'; // Red
+            else if (incident.criticality === 3) color = '#eab308'; // Yellow
+            else color = '#10b981'; // Green
+
+            const marker = L.circleMarker(coords, {
+                color: color,
+                fillColor: color,
+                fillOpacity: 0.7,
+                radius: 8
+            }).addTo(map);
+
+            marker.bindPopup(`
+                <b>#${incident.id}: ${incident.type}</b><br>
+                Status: ${incident.status}<br>
+                Level ${incident.criticality} (${getSeverityLabel(incident.criticality)})<br>
+                ${incident.location}
+            `);
+
+            marker.on('click', () => openModal(incident));
+
+            markers.push(marker);
+            bounds.extend(coords);
+        }
+    });
+
+    // Fit bounds if we have markers
+    if (markers.length > 0) {
+        map.fitBounds(bounds, { padding: [50, 50] });
+    }
+}
+
+// View Toggle Logic
+const btnViewList = document.getElementById('btn-view-list');
+const btnViewMap = document.getElementById('btn-view-map');
+const tableView = document.getElementById('table-view');
+const mapView = document.getElementById('incident-map');
+
+function switchView(view) {
+    if (view === 'LIST') {
+        tableView.classList.remove('hidden');
+        mapView.classList.add('hidden');
+        btnViewList.classList.add('active');
+        btnViewMap.classList.remove('active');
+    } else {
+        tableView.classList.add('hidden');
+        mapView.classList.remove('hidden');
+        btnViewList.classList.remove('active');
+        btnViewMap.classList.add('active');
+
+        // Invalidate size to ensure map renders correctly after being hidden
+        if (map) map.invalidateSize();
+    }
+}
+
+btnViewList.addEventListener('click', () => switchView('LIST'));
+btnViewMap.addEventListener('click', () => switchView('MAP'));
 
 // Event Listeners for Filters
 searchBtn.addEventListener('click', filterIncidents);
@@ -236,16 +367,7 @@ const modalFullDesc = document.getElementById('modal-full-desc');
 
 // Status Management Logic
 const buttonsView = document.getElementById('status-buttons-view');
-const dispatchFormView = document.getElementById('dispatch-form-view');
 const statusButtons = document.querySelectorAll('.status-btn');
-const cancelDispatchBtn = document.getElementById('cancel-dispatch');
-const confirmDispatchBtn = document.getElementById('confirm-dispatch');
-
-// Dispatch Inputs
-const dispatchNameInput = document.getElementById('dispatch-agent-name');
-const dispatchBadgeInput = document.getElementById('dispatch-agent-badge');
-const dispatchPhoneInput = document.getElementById('dispatch-agent-phone');
-const dispatchEmailInput = document.getElementById('dispatch-agent-email');
 
 let currentIncident = null;
 
@@ -256,7 +378,7 @@ function openModal(incident) {
     modalTitle.textContent = `Incident #${incident.id}: ${incident.type}`;
     modalDesc.textContent = incident.shortDesc;
 
-    modalCriticalityBadge.textContent = `${incident.criticality} SEVERITY`;
+    modalCriticalityBadge.textContent = `LEVEL ${incident.criticality} (${getSeverityLabel(incident.criticality).toUpperCase()})`;
     modalCriticalityBadge.className = `badge ${getSeverityClass(incident.criticality)}`;
 
     modalStatusBadge.textContent = incident.status;
@@ -286,17 +408,15 @@ function openModal(incident) {
 }
 
 function resetStatusView(status) {
-    dispatchFormView.classList.add('hidden');
-    buttonsView.classList.remove('hidden');
-
-    // Clear dispatch inputs
-    dispatchNameInput.value = '';
-    dispatchBadgeInput.value = '';
-    dispatchPhoneInput.value = '';
-    dispatchEmailInput.value = '';
-
+    // Reset buttons
     statusButtons.forEach(btn => {
-        btn.classList.remove('active-not-dispatched', 'active-dispatched', 'active-resolved');
+        btn.classList.remove('active-to-be-reviewed', 'active-acknowledged');
+        const btnStatus = btn.getAttribute('data-status');
+        if (btnStatus.toUpperCase() === status.toUpperCase()) {
+            // Activate the correct button styling
+            if (status === 'ACKNOWLEDGED') btn.classList.add('active-acknowledged');
+            else if (status === 'TO BE REVIEWED') btn.classList.add('active-to-be-reviewed');
+        }
     });
 }
 
@@ -318,70 +438,47 @@ modal.onclick = (e) => {
 statusButtons.forEach(btn => {
     btn.onclick = () => {
         const newStatus = btn.getAttribute('data-status');
-
-        if (newStatus === 'Dispatched') {
-            buttonsView.classList.add('hidden');
-            dispatchFormView.classList.remove('hidden');
-        } else {
-            updateStatus(newStatus);
-        }
+        updateStatus(newStatus);
     };
 });
-
-cancelDispatchBtn.onclick = () => {
-    dispatchFormView.classList.add('hidden');
-    buttonsView.classList.remove('hidden');
-};
-
-confirmDispatchBtn.onclick = () => {
-    // Capture agent details
-    const agentName = dispatchNameInput.value;
-    if (agentName) {
-        currentIncident.agent = agentName;
-    } else {
-        currentIncident.agent = "Assigned Agent";
-    }
-
-    updateStatus('DISPATCHED');
-    dispatchFormView.classList.add('hidden');
-    buttonsView.classList.remove('hidden');
-};
 
 function updateStatus(newStatus) {
     if (!currentIncident) return;
 
-    currentIncident.status = newStatus.toUpperCase();
+    // Convert button text "Acknowledge" to status "ACKNOWLEDGED" if needed
+    let statusToSet = newStatus.toUpperCase();
+    if (statusToSet === 'ACKNOWLEDGE') statusToSet = 'ACKNOWLEDGED';
 
-    if (newStatus.toUpperCase() === 'NOT DISPATCHED') {
-        currentIncident.agent = 'Not assigned';
-    }
+    currentIncident.status = statusToSet;
 
     // Update Modal Badge
     modalStatusBadge.textContent = currentIncident.status;
     modalStatusBadge.className = `badge ${getStatusClass(currentIncident.status)}`;
 
+    // Update Active Button State
+    resetStatusView(currentIncident.status);
+
     // Re-render Table
-    filterIncidents(); // Re-render with value incase filters are active
+    filterIncidents(); // Re-render with sorting and filtering
 
     updateStats();
 }
 
 function updateStats() {
     const total = incidents.length;
-    const notDispatched = incidents.filter(i => i.status === 'NOT DISPATCHED').length;
-    const dispatched = incidents.filter(i => i.status === 'DISPATCHED').length;
-    const resolved = incidents.filter(i => i.status === 'RESOLVED').length;
+    const toBeReviewed = incidents.filter(i => i.status === 'TO BE REVIEWED').length;
+    const acknowledged = incidents.filter(i => i.status === 'ACKNOWLEDGED').length;
 
     // Update Text (assuming fixed order in HTML)
     const statValues = document.querySelectorAll('.stat-card .stat-value');
-    if (statValues.length >= 4) {
+    if (statValues.length >= 3) {
         statValues[0].textContent = total;
-        statValues[1].textContent = notDispatched;
-        statValues[2].textContent = dispatched;
-        statValues[3].textContent = resolved;
+        statValues[1].textContent = toBeReviewed;
+        statValues[2].textContent = acknowledged;
     }
 }
 
 // Initial Render
+initMap();
 filterIncidents();
 updateStats();

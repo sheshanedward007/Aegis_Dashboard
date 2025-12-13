@@ -19,20 +19,19 @@
     --low-text: #ffffff;
 
     /* Status Colors */
-    --resolved-bg: #d1fae5;
-    --resolved-text: #065f46;
-    --dispatched-bg: #fef3c7;
-    --dispatched-text: #92400e;
     --not-dispatched-bg: #fee2e2;
     --not-dispatched-text: #b91c1c;
+    --to-be-reviewed-bg: #fee2e2;
+    --to-be-reviewed-text: #b91c1c;
+    --acknowledged-bg: #d1fae5;
+    --acknowledged-text: #065f46;
 
     /* Stat Cards */
-    --stat-not-dispatched-bg: #fef2f2;
-    --stat-not-dispatched-text: #ef4444;
-    --stat-dispatched-bg: #fff7ed;
-    --stat-dispatched-text: #f97316;
-    --stat-resolved-bg: #ecfdf5;
-    --stat-resolved-text: #10b981;
+    --stat-to-be-reviewed-bg: #fef2f2;
+    --stat-to-be-reviewed-text: #ef4444;
+
+    --stat-acknowledged-bg: #ecfdf5;
+    --stat-acknowledged-text: #10b981;
 }
 
 body {
@@ -55,7 +54,8 @@ body {
 /* Header */
 .main-header {
     display: flex;
-    align-items: flex-start;
+    align-items: center;
+    justify-content: center;
     gap: 16px;
     margin-bottom: 32px;
 }
@@ -63,7 +63,7 @@ body {
 .header-icon {
     width: 24px;
     height: 24px;
-    margin-top: 4px;
+    /* margin-top: 4px; removed for center alignment */
 }
 
 .main-header h1 {
@@ -118,13 +118,22 @@ body {
     color: var(--stat-not-dispatched-text);
 }
 
-.stat-card.status-dispatched {
-    background-color: var(--stat-dispatched-bg);
+.stat-card.status-to-be-reviewed {
+    background-color: var(--stat-to-be-reviewed-bg);
 }
 
-.stat-card.status-dispatched h3,
-.stat-card.status-dispatched .stat-value {
-    color: var(--stat-dispatched-text);
+.stat-card.status-to-be-reviewed h3,
+.stat-card.status-to-be-reviewed .stat-value {
+    color: var(--stat-to-be-reviewed-text);
+}
+
+.stat-card.status-acknowledged {
+    background-color: var(--stat-acknowledged-bg);
+}
+
+.stat-card.status-acknowledged h3,
+.stat-card.status-acknowledged .stat-value {
+    color: var(--stat-acknowledged-text);
 }
 
 .stat-card.status-resolved {
@@ -191,6 +200,44 @@ body {
     min-width: 150px;
 }
 
+.view-toggle {
+    display: flex;
+    background-color: #f3f4f6;
+    border-radius: 6px;
+    padding: 2px;
+    border: 1px solid var(--border-color);
+}
+
+.toggle-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    border: none;
+    background: none;
+    border-radius: 4px;
+    color: var(--text-secondary);
+    cursor: pointer;
+}
+
+.toggle-btn.active {
+    background-color: var(--white);
+    color: var(--text-primary);
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+.map-view {
+    width: 100%;
+    height: 600px;
+    /* Fixed height for map */
+    border-radius: 8px;
+    border: 1px solid var(--border-color);
+    margin-bottom: 24px;
+    z-index: 1;
+    /* Ensure map is below modals */
+}
+
 /* Table */
 .table-container {
     background: var(--white);
@@ -202,7 +249,9 @@ body {
 
 .incident-table {
     width: 100%;
-    border-collapse: collapse;
+    border-collapse: separate;
+    border-spacing: 0 8px;
+    /* Vertical spacing between rows */
 }
 
 .incident-table th {
@@ -211,25 +260,48 @@ body {
     font-size: 12px;
     font-weight: 600;
     color: var(--text-secondary);
-    border-bottom: 1px solid var(--border-color);
-    background-color: #f9fafb;
+    /* No border bottom for header in this style, maybe just clean */
+    border-bottom: none;
+    background-color: transparent;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
 }
 
-.incident-table td {
-    padding: 16px 24px;
-    font-size: 14px;
-    color: var(--text-primary);
-    border-bottom: 1px solid var(--border-color);
-    vertical-align: middle;
+.incident-table tbody tr {
+    background-color: var(--white);
+    box-shadow: var(--shadow-sm);
+    transition: transform 0.1s, box-shadow 0.1s;
 }
 
-.incident-table tr:hover {
-    background-color: #f9fafb;
+.incident-table tbody tr:hover {
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-md);
     cursor: pointer;
 }
 
-.incident-table tr:last-child td {
-    border-bottom: none;
+.incident-table td {
+    padding: 20px 24px;
+    /* More padding for card feel */
+    font-size: 14px;
+    color: var(--text-primary);
+    border: none;
+    /* remove internal borders */
+    background-color: var(--white);
+    vertical-align: middle;
+}
+
+/* Rounded corners for the row card */
+.incident-table td:first-child {
+    border-top-left-radius: 8px;
+    border-bottom-left-radius: 8px;
+    font-weight: 600;
+    /* Make ID stand out */
+    color: var(--text-secondary);
+}
+
+.incident-table td:last-child {
+    border-top-right-radius: 8px;
+    border-bottom-right-radius: 8px;
 }
 
 /* Badges */
@@ -248,19 +320,26 @@ body {
     color: var(--critical-text);
 }
 
-.badge-high {
-    background-color: var(--high-bg);
-    color: var(--high-text);
-}
-
-.badge-medium {
+.badge-mid {
     background-color: var(--medium-bg);
     color: var(--medium-text);
 }
 
 .badge-low {
-    background-color: var(--low-bg);
-    color: var(--low-text);
+    background-color: #d1fae5;
+    /* Green for Low (1-2) */
+    color: #065f46;
+}
+
+.status-acknowledged {
+    background-color: var(--acknowledged-bg);
+    color: var(--acknowledged-text);
+}
+
+
+.status-to-be-reviewed {
+    background-color: var(--to-be-reviewed-bg);
+    color: var(--to-be-reviewed-text);
 }
 
 .status-resolved {
@@ -268,10 +347,7 @@ body {
     color: var(--resolved-text);
 }
 
-.status-dispatched {
-    background-color: var(--dispatched-bg);
-    color: var(--dispatched-text);
-}
+
 
 .status-not-dispatched {
     background-color: var(--not-dispatched-bg);
@@ -453,10 +529,17 @@ body {
     border-color: #fecaca;
 }
 
-.status-btn.active-dispatched {
-    background-color: #fef3c7;
-    color: #92400e;
-    border-color: #fde68a;
+.status-btn.active-to-be-reviewed {
+    background-color: #fee2e2;
+    color: #b91c1c;
+    border-color: #fecaca;
+}
+
+
+.status-btn.active-acknowledged {
+    background-color: #d1fae5;
+    color: #065f46;
+    border-color: #a7f3d0;
 }
 
 .status-btn.active-resolved {
@@ -469,34 +552,7 @@ body {
     background-color: #f9fafb;
 }
 
-/* Dispatch Form */
-.form-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 16px;
-    margin: 16px 0;
-}
 
-.form-group label {
-    display: block;
-    font-size: 13px;
-    color: var(--text-secondary);
-    margin-bottom: 4px;
-}
-
-.form-group input {
-    width: 100%;
-    padding: 8px;
-    border: 1px solid var(--border-color);
-    border-radius: 6px;
-    font-size: 14px;
-    box-sizing: border-box;
-}
-
-.form-actions {
-    display: flex;
-    gap: 12px;
-}
 
 .btn-primary {
     background-color: #2563eb;
