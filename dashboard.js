@@ -341,28 +341,41 @@ function openModal(incident) {
     const incidentImage = document.getElementById('modal-incident-image');
     const noImageText = document.getElementById('modal-no-image');
 
+    console.log("Opening modal for incident:", incident); // Debug Log
+
+    // Check for image field (try common names if strict 'image' isn't guaranteed, but sticking to 'image' from mapping for now)
+    // We mapped 'image' in the onSnapshot listener: image: data.image || null
     if (incident.image) {
+        console.log("Found image field:", incident.image);
+
         // Reset state
         imageContainer.style.display = 'none';
-        noImageText.style.display = 'none'; // tailored for loading state if needed, but keeping simple
+        noImageText.style.display = 'none';
 
-        // Create a reference to the file we want to download
-        const storageRef = storage.ref(incident.image);
-
-        // Get the download URL
-        storageRef.getDownloadURL()
-            .then((url) => {
-                incidentImage.src = url;
-                imageContainer.style.display = 'block';
-                noImageText.style.display = 'none';
-            })
-            .catch((error) => {
-                console.error("Error fetching image URL:", error);
-                imageContainer.style.display = 'none';
-                noImageText.style.display = 'block';
-                noImageText.textContent = "Error loading image";
-            });
+        // Check if it's already a URL
+        if (incident.image.startsWith('http')) {
+            console.log("Image is a URL, using directly.");
+            incidentImage.src = incident.image;
+            imageContainer.style.display = 'block';
+        } else {
+            console.log("Image is a path, fetching download URL from Storage.");
+            // It's a storage path
+            const storageRef = storage.ref(incident.image);
+            storageRef.getDownloadURL()
+                .then((url) => {
+                    console.log("Fetched URL:", url);
+                    incidentImage.src = url;
+                    imageContainer.style.display = 'block';
+                })
+                .catch((error) => {
+                    console.error("Error fetching image URL:", error);
+                    imageContainer.style.display = 'none';
+                    noImageText.style.display = 'block';
+                    noImageText.textContent = "Error loading image: " + error.message;
+                });
+        }
     } else {
+        console.log("No image field found in incident data.");
         imageContainer.style.display = 'none';
         noImageText.style.display = 'block';
         noImageText.textContent = "No image available";
