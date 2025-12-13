@@ -29,10 +29,13 @@ reportsRef.onSnapshot((snapshot) => {
         incidents.push({
             id: doc.id,
             type: data.type || "",
-            severity: data.severity || 3,
+            severity: parseInt(data.severity) || 3,
             status: data.status || "TO BE REVIEWED",
             reporter: data.reporter || "Anonymous",
-            location: data.location || null, // {lat: .., lng: ..}
+            location: data.location ? {
+                lat: data.location.latitude || data.location.lat,
+                lng: data.location.longitude || data.location.lng
+            } : null,
             timestamp: data.timestamp || null,
             notes: data.notes || ""
         });
@@ -56,11 +59,34 @@ function getSeverityLabel(level) {
 
 // Helper to get status badge class
 function getStatusClass(status) {
+    if (!status) return 'status-to-be-reviewed';
     switch (status.toUpperCase()) {
         case 'ACKNOWLEDGED': return 'status-acknowledged';
-        case 'TO BE REVIEWED': return 'status-to-be-reviewed';
+        case 'TO BE REVIEWED':
+        case 'PENDING': return 'status-to-be-reviewed';
         default: return 'status-to-be-reviewed';
     }
+}
+
+// Helper to format timestamp
+function formatTimestamp(timestamp) {
+    if (!timestamp) return 'N/A';
+    // Firestore Timestamp
+    if (timestamp.toDate && typeof timestamp.toDate === 'function') {
+        return timestamp.toDate().toLocaleString();
+    }
+    // JS Date object
+    if (timestamp instanceof Date) {
+        return timestamp.toLocaleString();
+    }
+    // Number (Epoch) or String (ISO)
+    if (typeof timestamp === 'number' || typeof timestamp === 'string') {
+        const date = new Date(timestamp);
+        if (!isNaN(date.getTime())) {
+            return date.toLocaleString();
+        }
+    }
+    return 'N/A';
 }
 
 // Render Table
@@ -69,7 +95,7 @@ function renderTable(data = incidents) {
     tbody.innerHTML = '';
 
     if (data.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;">No incidents found matching your filters.</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;">No incidents found matching your filters.</td></tr>';
         return;
     }
 
@@ -81,18 +107,21 @@ function renderTable(data = incidents) {
         const locationStr = incident.location ? `${incident.location.lat.toFixed(5)}, ${incident.location.lng.toFixed(5)}` : 'N/A';
 
         // Format timestamp for display
-        let timeStr = 'N/A';
-        if (incident.timestamp && incident.timestamp.toDate) {
-            timeStr = incident.timestamp.toDate().toLocaleString();
+        // Format timestamp for display
+        const timeStr = formatTimestamp(incident.timestamp);
+
+        // Normalize Status Display
+        let displayStatus = incident.status;
+        if (displayStatus && displayStatus.toUpperCase() === 'PENDING') {
+            displayStatus = 'TO BE REVIEWED';
         }
 
         tr.innerHTML = `
             <td>#${incident.id}</td>
             <td><span class="badge ${getSeverityClass(incident.severity)}">Level ${incident.severity} (${getSeverityLabel(incident.severity)})</span></td>
-            <td><span class="badge ${getStatusClass(incident.status)}">${incident.status}</span></td>
+            <td><span class="badge ${getStatusClass(incident.status)}">${displayStatus}</span></td>
             <td>${incident.type}</td>
             <td>${incident.reporter}</td>
-            <td>${locationStr}</td>
         `;
         tbody.appendChild(tr);
     });
@@ -112,31 +141,45 @@ function filterIncidents() {
 
     let filtered = incidents.filter(incident => {
         const locationStr = incident.location ? `${incident.location.lat},${incident.location.lng}` : '';
+        const lowerType = (incident.type || "").toLowerCase();
+        const lowerReporter = (incident.reporter || "").toLowerCase();
+
         const matchesSearch =
-            incident.type.toLowerCase().includes(searchTerm) ||
+            lowerType.includes(searchTerm) ||
             locationStr.toLowerCase().includes(searchTerm) ||
-            incident.reporter.toLowerCase().includes(searchTerm);
+            lowerReporter.includes(searchTerm);
 
         const matchesSeverity = severityValue === '' || incident.severity === parseInt(severityValue);
 
         let matchesStatus = true;
         if (currentStatusFilter !== 'ALL') {
-            matchesStatus = incident.status === currentStatusFilter;
+            if (currentStatusFilter === 'TO BE REVIEWED') {
+                // Show both 'TO BE REVIEWED' and 'PENDING' in this tab (case-insensitive)
+                const statusUpper = incident.status ? incident.status.toUpperCase() : '';
+                matchesStatus = statusUpper === 'TO BE REVIEWED' || statusUpper === 'PENDING';
+            } else {
+                matchesStatus = incident.status ? incident.status.toUpperCase() === currentStatusFilter : false;
+            }
         }
 
         return matchesSearch && matchesSeverity && matchesStatus;
     });
 
     filtered.sort((a, b) => {
-        if (a.status !== b.status) {
-            if (a.status === 'TO BE REVIEWED') return -1;
-            return 1;
-        }
-        return b.severity - a.severity;
+        const statusA = (a.status || "").toUpperCase();
+        const statusB = (b.status || "").toUpperCase();
+        const isAckA = statusA === 'ACKNOWLEDGED';
+        const isAckB = statusB === 'ACKNOWLEDGED';
+
+        if (isAckA && !isAckB) return 1; // A should be below B
+        if (!isAckA && isAckB) return -1; // A should be above B
+
+        // Secondary Sort: Severity (5 to 1)
+        return (b.severity || 0) - (a.severity || 0);
     });
 
-    if (currentStatusFilter === 'ALL' && filtered.length > 20) {
-        filtered = filtered.slice(0, 20);
+    if (currentStatusFilter === 'ALL' && filtered.length > 15) {
+        filtered = filtered.slice(0, 15);
     }
 
     renderTable(filtered);
@@ -152,7 +195,8 @@ function initMap() {
         console.warn('Leaflet not loaded. Map will not be available.');
         return;
     }
-    map = L.map('incident-map').setView([37.7749, -122.4194], 12);
+    // SRI LANKA Coordinates: 7.8731° N, 80.7718° E
+    map = L.map('incident-map').setView([7.8731, 80.7718], 8);
 
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
@@ -169,7 +213,13 @@ function renderMapMarkers(data) {
 
     data.forEach(incident => {
         if (!incident.location) return;
-        const coords = [incident.location.lat, incident.location.lng];
+
+        const lat = parseFloat(incident.location.lat);
+        const lng = parseFloat(incident.location.lng);
+
+        if (isNaN(lat) || isNaN(lng)) return;
+
+        const coords = [lat, lng];
 
         let color = '#3b82f6';
         if (incident.severity >= 4) color = '#ef4444';
@@ -183,14 +233,14 @@ function renderMapMarkers(data) {
             radius: 8
         }).addTo(map);
 
-        const timeStr = incident.timestamp && incident.timestamp.toDate ? incident.timestamp.toDate().toLocaleString() : 'N/A';
+        const timeStr = formatTimestamp(incident.timestamp);
 
         marker.bindPopup(`
             <b>#${incident.id}: ${incident.type}</b><br>
             Status: ${incident.status}<br>
             Level ${incident.severity} (${getSeverityLabel(incident.severity)})<br>
             Reporter: ${incident.reporter}<br>
-            Location: ${coords[0].toFixed(5)}, ${coords[1].toFixed(5)}<br>
+            Location: ${lat.toFixed(5)}, ${lng.toFixed(5)}<br>
             Time: ${timeStr}
         `);
 
@@ -205,6 +255,29 @@ function renderMapMarkers(data) {
     }
 }
 
+// Event Listeners for Filters
+if (searchBtn) searchBtn.addEventListener('click', filterIncidents);
+if (searchInput) {
+    searchInput.addEventListener('keyup', (e) => {
+        if (e.key === 'Enter') filterIncidents();
+    });
+}
+if (severityFilter) severityFilter.addEventListener('change', filterIncidents);
+
+// Tab Navigation Logic
+navTabs.forEach(tab => {
+    tab.addEventListener('click', () => {
+        // Remove active class from all tabs
+        navTabs.forEach(t => t.classList.remove('active'));
+        // Add active class to clicked tab
+        tab.classList.add('active');
+
+        // Update filter
+        currentStatusFilter = tab.getAttribute('data-tab');
+        filterIncidents();
+    });
+});
+
 // Modal Logic
 const modal = document.getElementById('incident-modal');
 const modalTitle = document.getElementById('modal-title');
@@ -212,7 +285,6 @@ const modalDesc = document.getElementById('modal-desc');
 const modalSeverityBadge = document.getElementById('modal-criticality-badge');
 const modalStatusBadge = document.getElementById('modal-status-badge');
 const modalTime = document.getElementById('modal-time');
-const modalAddress = document.getElementById('modal-address');
 const modalReporterName = document.getElementById('modal-reporter-name');
 const modalNotes = document.getElementById('modal-full-desc');
 
@@ -227,23 +299,49 @@ function openModal(incident) {
     modalSeverityBadge.textContent = `LEVEL ${incident.severity} (${getSeverityLabel(incident.severity).toUpperCase()})`;
     modalSeverityBadge.className = `badge ${getSeverityClass(incident.severity)}`;
 
-    modalStatusBadge.textContent = incident.status;
+    let displayStatus = incident.status;
+    if (displayStatus && displayStatus.toUpperCase() === 'PENDING') {
+        displayStatus = 'TO BE REVIEWED';
+    }
+    modalStatusBadge.textContent = displayStatus;
     modalStatusBadge.className = `badge ${getStatusClass(incident.status)}`;
 
-    const locationStr = incident.location ? `${incident.location.lat.toFixed(5)}, ${incident.location.lng.toFixed(5)}` : 'N/A';
-    modalAddress.textContent = locationStr;
-
-    const timeStr = incident.timestamp && incident.timestamp.toDate ? incident.timestamp.toDate().toLocaleString() : 'N/A';
+    const timeStr = formatTimestamp(incident.timestamp);
     modalTime.textContent = timeStr;
 
     modalReporterName.textContent = incident.reporter;
     modalNotes.textContent = incident.notes;
 
     modal.classList.remove('hidden');
+
+    // Initialize/Update Modal Map (Iframe)
+    const mapFrame = document.getElementById('modal-map-frame');
+    if (incident.location && mapFrame) {
+        // Calculate BBOX for embed
+        // roughly 0.01 degrees delta for zoom level ~15
+        const lat = parseFloat(incident.location.lat);
+        const lng = parseFloat(incident.location.lng);
+
+        if (!isNaN(lat) && !isNaN(lng)) {
+            const delta = 0.005; // Adjust zoom level
+            const bbox = `${lng - delta},${lat - delta},${lng + delta},${lat + delta}`;
+            const src = `https://www.openstreetmap.org/export/embed.html?bbox=${bbox}&layer=mapnik&marker=${lat},${lng}`;
+            mapFrame.src = src;
+        } else {
+            mapFrame.src = "about:blank";
+        }
+    } else if (mapFrame) {
+        mapFrame.src = "about:blank";
+    }
 }
 
 function closeModal() {
     modal.classList.add('hidden');
+    // Clear iframe to stop loading
+    const mapFrame = document.getElementById('modal-map-frame');
+    if (mapFrame) {
+        mapFrame.src = "";
+    }
     currentIncident = null;
 }
 
@@ -251,28 +349,49 @@ document.querySelector('.close-modal').onclick = closeModal;
 document.querySelector('.btn-close').onclick = closeModal;
 modal.onclick = (e) => { if (e.target === modal) closeModal(); };
 
-// Status Buttons (optional, keep if you have them)
+// Status Buttons
 const statusButtons = document.querySelectorAll('.status-btn');
 statusButtons.forEach(btn => {
     btn.onclick = () => {
         if (!currentIncident) return;
         let statusToSet = btn.getAttribute('data-status').toUpperCase();
         if (statusToSet === 'ACKNOWLEDGE') statusToSet = 'ACKNOWLEDGED';
+
+        // Optimistic UI update
+        const oldStatus = currentIncident.status;
         currentIncident.status = statusToSet;
 
         modalStatusBadge.textContent = currentIncident.status;
         modalStatusBadge.className = `badge ${getStatusClass(currentIncident.status)}`;
 
-        filterIncidents();
-        updateStats();
+        // Firestore Update
+        reportsRef.doc(currentIncident.id).update({
+            status: statusToSet
+        }).then(() => {
+            console.log("Status updated successfully!");
+            // Re-render handled by onSnapshot listener automatically
+        }).catch((error) => {
+            console.error("Error updating status: ", error);
+            // Revert on error
+            currentIncident.status = oldStatus;
+            alert("Failed to update status. Please try again.");
+            modalStatusBadge.textContent = currentIncident.status;
+            modalStatusBadge.className = `badge ${getStatusClass(currentIncident.status)}`;
+        });
     };
 });
 
 // Stats update
 function updateStats() {
     const total = incidents.length;
-    const toBeReviewed = incidents.filter(i => i.status === 'TO BE REVIEWED').length;
-    const acknowledged = incidents.filter(i => i.status === 'ACKNOWLEDGED').length;
+    const toBeReviewed = incidents.filter(i => {
+        const s = i.status ? i.status.toUpperCase() : '';
+        return s === 'TO BE REVIEWED' || s === 'PENDING';
+    }).length;
+    const acknowledged = incidents.filter(i => {
+        const s = i.status ? i.status.toUpperCase() : '';
+        return s === 'ACKNOWLEDGED';
+    }).length;
 
     const statValues = document.querySelectorAll('.stat-card .stat-value');
     if (statValues.length >= 3) {
