@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Incident Report Dashboard</title>
+    <link rel="stylesheet" href="dashboard.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+
+<body>
+    <div class="dashboard-container">
+        <!-- Header -->
+        <header class="main-header">
+            <div class="header-icon">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#dc2626" stroke-width="2"
+                    stroke-linecap="round" stroke-linejoin="round">
+                    <path
+                        d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+                    <line x1="12" y1="9" x2="12" y2="13" />
+                    <line x1="12" y1="17" x2="12.01" y2="17" />
+                </svg>
+            </div>
+            <div>
+                <h1>Incident Report Dashboard</h1>
+                <p>Real-time incident monitoring and management</p>
+            </div>
+        </header>
+
+        <!-- Stats Row -->
+        <div class="stats-row">
+            <div class="stat-card">
+                <h3>Total Incidents</h3>
+                <p class="stat-value">6</p>
+            </div>
+            <div class="stat-card status-not-dispatched">
+                <h3>Not Dispatched</h3>
+                <p class="stat-value">2</p>
+            </div>
+            <div class="stat-card status-dispatched">
+                <h3>Dispatched</h3>
+                <p class="stat-value">2</p>
+            </div>
+            <div class="stat-card status-resolved">
+                <h3>Resolved</h3>
+                <p class="stat-value">2</p>
+            </div>
+        </div>
+
+        <!-- Filters -->
+        <div class="filter-section">
+            <div class="filter-header">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" />
+                </svg>
+                <span>Filter Incidents</span>
+            </div>
+            <div class="filter-controls">
+                <div class="search-box">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="11" cy="11" r="8" />
+                        <line x1="21" y1="21" x2="16.65" y2="16.65" />
+                    </svg>
+                    <input type="text" id="search-input" placeholder="Search by type, location, or reporter...">
+                </div>
+                <button id="search-btn" class="btn-primary" style="padding: 8px 16px;">Search</button>
+                <select id="severity-filter" class="filter-dropdown">
+                    <option value="">All Severities</option>
+                    <option value="CRITICAL">Critical</option>
+                    <option value="HIGH">High</option>
+                    <option value="MEDIUM">Medium</option>
+                    <option value="LOW">Low</option>
+                </select>
+            </div>
+        </div>
+
+        <!-- Status Navigation -->
+        <div class="status-nav">
+            <button class="nav-tab active" data-tab="CURRENT">Current</button>
+            <button class="nav-tab" data-tab="NOT DISPATCHED">Not Dispatched</button>
+            <button class="nav-tab" data-tab="DISPATCHED">Dispatched</button>
+            <button class="nav-tab" data-tab="RESOLVED">Resolved</button>
+        </div>
+
+        <!-- Table -->
+        <div class="table-container">
+            <table class="incident-table">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Criticality</th>
+                        <th>Status</th>
+                        <th>Incident Type</th>
+                        <th>Reporter</th>
+                        <th>Location</th>
+                        <th>Agent/Progress</th>
+                    </tr>
+                </thead>
+                <tbody id="incident-table-body">
+                    <!-- Data will be populated by JS -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Modal -->
+    <div id="incident-modal" class="modal-overlay hidden">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div class="modal-header-badges">
+                    <span id="modal-criticality-badge" class="badge">CRITICAL SEVERITY</span>
+                    <span id="modal-status-badge" class="badge">RESOLVED</span>
+                </div>
+                <button class="close-modal" aria-label="Close modal">&times;</button>
+            </div>
+
+            <div class="modal-body-header">
+                <h2 id="modal-title">Incident #1: Fire</h2>
+                <p id="modal-desc">Building fire on 3rd floor, multiple people evacuated</p>
+            </div>
+
+            <div class="modal-scroll-area">
+                <!-- Status Management Section -->
+                <div class="detail-section highlight-section">
+                    <div class="section-title">
+                        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
+                        </svg>
+                        Status Management
+                    </div>
+
+                    <!-- Buttons View -->
+                    <div id="status-buttons-view" class="status-actions">
+                        <button class="status-btn" data-status="Not Dispatched">Not Dispatched</button>
+                        <button class="status-btn" data-status="Dispatched">Dispatch Agent</button>
+                        <button class="status-btn" data-status="Resolved">Resolved</button>
+                    </div>
+
+                    <!-- Dispatch Form View (Hidden by default) -->
+                    <div id="dispatch-form-view" class="hidden">
+                        <h3>Assign Agent</h3>
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label>Agent Name</label>
+                                <input type="text" id="dispatch-agent-name" placeholder="Enter agent name">
+                            </div>
+                            <div class="form-group">
+                                <label>Badge Number</label>
+                                <input type="text" id="dispatch-agent-badge" placeholder="Enter badge number">
+                            </div>
+                            <div class="form-group">
+                                <label>Phone</label>
+                                <input type="text" id="dispatch-agent-phone" placeholder="Enter phone number">
+                            </div>
+                            <div class="form-group">
+                                <label>Email</label>
+                                <input type="text" id="dispatch-agent-email" placeholder="Enter email address">
+                            </div>
+                        </div>
+                        <div class="form-actions">
+                            <button class="btn-primary" id="confirm-dispatch">Dispatch Agent</button>
+                            <button class="btn-secondary" id="cancel-dispatch">Cancel</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Time Reported -->
+                <div class="detail-section">
+                    <div class="section-title">
+                        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="12" cy="12" r="10" />
+                            <polyline points="12 6 12 12 16 14" />
+                        </svg>
+                        Time Reported
+                    </div>
+                    <div class="section-content" id="modal-time">
+                        Saturday, December 13, 2025 at 08:30:00 AM
+                    </div>
+                </div>
+
+                <!-- Location Details -->
+                <div class="detail-section">
+                    <div class="section-title">
+                        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
+                            <circle cx="12" cy="10" r="3" />
+                        </svg>
+                        Location Details
+                    </div>
+                    <div class="section-content">
+                        <div class="info-row"><span class="label">Address:</span>
+                            <div id="modal-address">1234 Main Street, Downtown, CA 94102</div>
+                        </div>
+                        <div class="info-row"><span class="label">GPS Coordinates:</span>
+                            <div id="modal-gps">37.7749° N, 122.4194° W</div>
+                        </div>
+                        <div class="map-container">
+                            <iframe id="incident-map" width="100%" height="200" frameborder="0" style="border:0"
+                                src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d100939.98555098464!2d-122.507640204439!3d37.75781498660996!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x80859a6d00690021%3A0x4a501367f076adff!2sSan%20Francisco%2C%20CA!5e0!3m2!1sen!2sus!4v1645564858296!5m2!1sen!2sus"
+                                allowfullscreen>
+                            </iframe>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Reporter Information -->
+                <div class="detail-section">
+                    <div class="section-title">
+                        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                            <circle cx="12" cy="7" r="4" />
+                        </svg>
+                        Reporter Information
+                    </div>
+                    <div class="section-content">
+                        <div class="info-row"><span class="label">Name:</span>
+                            <div id="modal-reporter-name">Sarah Mitchell</div>
+                        </div>
+                        <div class="info-row"><span class="label">Phone Number:</span>
+                            <div><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2">
+                                    <path
+                                        d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" />
+                                </svg> <span id="modal-reporter-phone">+1 (555) 123-4567</span></div>
+                        </div>
+                        <div class="info-row"><span class="label">Email Address:</span>
+                            <div><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2">
+                                    <path
+                                        d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
+                                    <polyline points="22,6 12,13 2,6" />
+                                </svg> <span id="modal-reporter-email">sarah.mitchell@email.com</span></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Incident Classification -->
+                <div class="detail-section">
+                    <div class="section-title">
+                        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="12" cy="12" r="10" />
+                            <line x1="12" y1="8" x2="12" y2="12" />
+                            <line x1="12" y1="16" x2="12.01" y2="16" />
+                        </svg>
+                        Incident Classification
+                    </div>
+                    <div class="section-content">
+                        <div class="info-row"><span class="label">Type:</span>
+                            <div id="modal-type">Fire</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Required Supplies -->
+                <div class="detail-section">
+                    <div class="section-title">
+                        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path
+                                d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" />
+                            <polyline points="3.27 6.96 12 12.01 20.73 6.96" />
+                            <line x1="12" y1="22.08" x2="12" y2="12" />
+                        </svg>
+                        Required Supplies & Resources
+                    </div>
+                    <div class="section-content supplies-grid" id="modal-supplies">
+                        <!-- Populated by JS -->
+                    </div>
+                </div>
+
+                <!-- Full Description -->
+                <div class="detail-section">
+                    <div class="section-title">
+                        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                            <polyline points="14 2 14 8 20 8" />
+                            <line x1="16" y1="13" x2="8" y2="13" />
+                            <line x1="16" y1="17" x2="8" y2="17" />
+                            <polyline points="10 9 9 9 8 9" />
+                        </svg>
+                        Full Description
+                    </div>
+                    <div class="section-content" id="modal-full-desc">
+                        Building fire on 3rd floor, multiple people evacuated
+                    </div>
+                </div>
+            </div>
+
+            <div class="modal-footer">
+                <button class="btn-close" onclick="closeModal()">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="dashboard.js"></script>
+</body>
+
+</html>
