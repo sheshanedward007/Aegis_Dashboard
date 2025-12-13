@@ -37,7 +37,9 @@ reportsRef.onSnapshot((snapshot) => {
             } : null,
             timestamp: data.timestamp || null,
             notes: data.notes || "",
-            image: data.image || null // Base64 image
+            notes: data.notes || "",
+            image: data.image || null, // Base64 image
+            archived: data.archived || false
         });
     });
     filterIncidents();
@@ -99,6 +101,16 @@ function renderTable(data = incidents) {
             <td><span class="badge ${getStatusClass(incident.status)}">${displayStatus}</span></td>
             <td>${incident.type}</td>
             <td>${incident.reporter}</td>
+            <td onclick="event.stopPropagation()">
+                ${incident.status.toUpperCase() === 'ACKNOWLEDGED' ? `
+                <button class="btn-icon-delete" onclick="archiveIncident('${incident.id}')" title="Archive Incident">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="3 6 5 6 21 6"></polyline>
+                        <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                    </svg>
+                </button>
+                ` : ''}
+            </td>
         `;
         tbody.appendChild(tr);
     });
@@ -123,7 +135,23 @@ function filterIncidents() {
         const matchesSeverity = !sev || i.severity === parseInt(sev);
 
         let matchesStatus = true;
-        if (currentStatusFilter !== 'ALL') {
+
+        // Soft Delete Logic:
+        // If viewing ALL, exclude archived items
+        if (currentStatusFilter === 'ALL') {
+            if (i.archived) return false;
+        } else if (currentStatusFilter === 'ACKNOWLEDGED') {
+            // Include archived items in ACKNOWLEDGED tab? User said: "it should still be visible in the acknowladged tab"
+            // So we don't filter out archived here.
+
+            const s = i.status.toUpperCase();
+            matchesStatus = s === currentStatusFilter;
+        } else {
+            // For other statuses (TO BE REVIEWED), we probably shouldn't show archived ones if they somehow got there,
+            // but usually only acknowledged ones are archived. 
+            // Let's assume archived items shouldn't show up in pending/review if they were somehow archived.
+            if (i.archived) return false;
+
             const s = i.status.toUpperCase();
             matchesStatus = currentStatusFilter === 'TO BE REVIEWED'
                 ? s === 'TO BE REVIEWED' || s === 'PENDING'
@@ -133,7 +161,15 @@ function filterIncidents() {
         return matchesSearch && matchesSeverity && matchesStatus;
     });
 
-    filtered.sort((a, b) => b.severity - a.severity);
+    filtered.sort((a, b) => {
+        const isAckA = a.status.toUpperCase() === 'ACKNOWLEDGED';
+        const isAckB = b.status.toUpperCase() === 'ACKNOWLEDGED';
+
+        if (isAckA !== isAckB) {
+            return isAckA ? 1 : -1; // Non-Acknowledged first
+        }
+        return b.severity - a.severity; // Then by severity
+    });
 
     renderTable(filtered);
     renderMapMarkers(filtered);
@@ -229,4 +265,19 @@ function updateStats() {
 // Init
 initMap();
 filterIncidents();
-updateStats();
+
+// Archive Incident
+function archiveIncident(id) {
+    if (!confirm('Are you sure you want to remove this incident from the main view? It will still be visible in the Acknowledged tab.')) return;
+
+    db.collection("reports").doc(id).update({
+        archived: true
+    }).then(() => {
+        console.log("Incident archived successfully");
+        // Snapshot listener will update UI
+    }).catch((error) => {
+        console.error("Error archiving incident: ", error);
+        alert("Error archiving incident");
+    });
+}
+

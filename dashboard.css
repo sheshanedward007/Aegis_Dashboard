@@ -629,3 +629,22 @@ body {
     color: #2563eb;
     border-bottom-color: #2563eb;
 }
+
+/* Action Buttons */
+.btn-icon-delete {
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: #ef4444;
+    /* Red for delete */
+    padding: 4px;
+    border-radius: 4px;
+    transition: background-color 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.btn-icon-delete:hover {
+    background-color: #fee2e2;
+}
