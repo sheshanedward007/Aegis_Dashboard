@@ -32,12 +32,11 @@ reportsRef.onSnapshot((snapshot) => {
             severity: parseInt(data.severity) || 3,
             status: data.status || "TO BE REVIEWED",
             reporter: data.reporter || "Anonymous",
-            location: data.location ? {
-                lat: data.location.latitude || data.location.lat,
-                lng: data.location.longitude || data.location.lng
+            location: (data.location || data.coords) ? {
+                lat: (data.location?.latitude || data.location?.lat || data.coords?.latitude || data.coords?.lat),
+                lng: (data.location?.longitude || data.location?.lng || data.coords?.longitude || data.coords?.lng)
             } : null,
             timestamp: data.timestamp || null,
-            notes: data.notes || "",
             notes: data.notes || "",
             image: data.image || null, // Base64 image
             archived: data.archived || false
@@ -204,10 +203,9 @@ function renderMapMarkers(data) {
     data.forEach(i => {
         if (!i.location) return;
 
-        const marker = L.circleMarker([i.location.lat, i.location.lng], {
-            radius: 8,
-            fillOpacity: 0.7
-        }).addTo(map);
+        const marker = L.marker([i.location.lat, i.location.lng])
+            .addTo(map)
+            .bindPopup(`<b>#${i.id}: ${i.type}</b><br>Status: ${i.status}<br>Severity: ${i.severity}`);
 
         marker.on('click', () => openModal(i));
         markers.push(marker);
@@ -222,7 +220,6 @@ const modalStatusBadge = document.getElementById('modal-status-badge');
 const modalTime = document.getElementById('modal-time');
 const modalReporterName = document.getElementById('modal-reporter-name');
 const modalNotes = document.getElementById('modal-full-desc');
-const modalType = document.getElementById('modal-type');
 
 function openModal(incident) {
     modalTitle.textContent = `Incident #${incident.id}: ${incident.type}`;
@@ -232,7 +229,9 @@ function openModal(incident) {
     modalStatusBadge.textContent = incident.status;
     modalStatusBadge.className = `badge ${getStatusClass(incident.status)}`;
 
-    modalType.textContent = incident.type;
+    const modalType = document.getElementById('modal-type');
+    if (modalType) modalType.textContent = incident.type;
+
     modalTime.textContent = formatTimestamp(incident.timestamp);
     modalReporterName.textContent = incident.reporter;
     modalNotes.textContent = incident.notes;
@@ -256,6 +255,28 @@ function openModal(incident) {
 
     // Update buttons state
     updateStatusButtons(incident.status);
+
+    // Display formatted GPS
+    const gpsDiv = document.getElementById('modal-gps');
+    if (incident.location) {
+        gpsDiv.textContent = `${parseFloat(incident.location.lat).toFixed(4)}° N, ${parseFloat(incident.location.lng).toFixed(4)}° E`;
+    } else {
+        gpsDiv.textContent = "No GPS Data";
+    }
+
+    // Modal Map Handling - Google Maps Iframe
+    const mapContainer = document.getElementById('modal-mini-map');
+    if (incident.location) {
+        mapContainer.innerHTML = `<iframe 
+            width="100%" 
+            height="300" 
+            frameborder="0" 
+            style="border:0" 
+            src="https://maps.google.com/maps?q=${incident.location.lat},${incident.location.lng}&hl=en&z=14&output=embed">
+        </iframe>`;
+    } else {
+        mapContainer.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:300px;background:#f3f4f6;color:#6b7280;">No location data available</div>';
+    }
 
     modal.classList.remove('hidden');
 }
