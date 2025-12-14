@@ -222,6 +222,7 @@ const modalStatusBadge = document.getElementById('modal-status-badge');
 const modalTime = document.getElementById('modal-time');
 const modalReporterName = document.getElementById('modal-reporter-name');
 const modalNotes = document.getElementById('modal-full-desc');
+const modalType = document.getElementById('modal-type');
 
 function openModal(incident) {
     modalTitle.textContent = `Incident #${incident.id}: ${incident.type}`;
@@ -231,6 +232,7 @@ function openModal(incident) {
     modalStatusBadge.textContent = incident.status;
     modalStatusBadge.className = `badge ${getStatusClass(incident.status)}`;
 
+    modalType.textContent = incident.type;
     modalTime.textContent = formatTimestamp(incident.timestamp);
     modalReporterName.textContent = incident.reporter;
     modalNotes.textContent = incident.notes;
